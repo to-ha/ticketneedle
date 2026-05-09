@@ -46,8 +46,49 @@ tools/          validation, stats, plot
 
 ## Quickstart
 
-To be filled as the tool stabilizes. The generator targets a local
-Ollama endpoint (`http://localhost:11434`) running `llama3.3:70b`.
+The generator targets a local Ollama endpoint (`http://localhost:11434`)
+running `llama3.3:70b` (chosen for family-neutrality vs. the planned
+benchmark models — Qwen / GPT / Claude — and to keep the corpus
+generation pipeline fully local).
+
+```bash
+# One-time setup
+python3 -m venv .venv
+.venv/bin/pip install -e .
+
+# Pull the generator model (one-time, ~42 GB)
+ollama pull llama3.3:70b
+
+# Smoke test (1 ticket, ~80s on M5 Max)
+.venv/bin/python generate.py --size small --output ./out/smoke --limit 1
+
+# Full small corpus (30 tickets, ~40 min)
+.venv/bin/python generate.py --size small --output ../ticketneedle-corpus/small_30
+
+# Inspect
+.venv/bin/python tools/stats.py ./out/smoke
+.venv/bin/python tools/recheck.py ./out/smoke
+```
+
+### Two-stage generation
+
+1. **Phase 1** — a JSON-mode call generates the *needles* for the ticket
+   (`resolution_steps`, `root_cause`, `key_command`). Schema-validated,
+   vendor-filtered, retried on failure.
+2. **Phase 2** — a second call generates the full Markdown ticket body
+   around the needles, with strict instructions to embed every needle
+   verbatim. The output is post-validated against the index of needles;
+   non-conformant tickets are retried.
+
+Escalation paths and incident timestamps are generated deterministically
+(no LLM call) from the per-ticket seed, so they are perfectly
+reproducible.
+
+### Reproducibility
+
+`generation_seeds.json` (written into the output directory) records the
+base seed plus every per-ticket parameter and seed slot, so the corpus
+can be regenerated bit-identical.
 
 ## Inspiration and credit
 

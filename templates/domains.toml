@@ -1,0 +1,157 @@
+# Domain definitions for ticket generation.
+# Weights are absolute counts for the large_150 corpus and are scaled
+# proportionally for medium_80 / small_30 with a per-domain floor.
+# Vocabulary is fed to the LLM as "domain hints" — it shapes flavor
+# without contradicting the planted needles.
+
+[network]
+display_name = "Network"
+weight_large = 30
+priority_skew = ["P1", "P1", "P2"]
+components = [
+    "BGP peering session",
+    "OSPF backbone area",
+    "recursive DNS resolver cluster",
+    "edge load balancer",
+    "stateful firewall pair",
+    "WAN aggregation router",
+    "MPLS L3VPN",
+    "anycast VIP",
+]
+tools = ["tcpdump", "MTR", "traceroute", "Wireshark", "nft", "iperf3", "dig", "nslookup"]
+typical_symptoms = [
+    "intermittent packet loss on a single uplink",
+    "BGP session flapping every few minutes",
+    "DNS resolution latency spike to 5-10 seconds",
+    "asymmetric routing after a config push",
+    "MTU black hole between two sites",
+]
+
+[kubernetes]
+display_name = "Containers / Kubernetes"
+weight_large = 25
+priority_skew = ["P1", "P2", "P2", "P3"]
+components = [
+    "ingress controller",
+    "node kubelet",
+    "container runtime",
+    "CNI plugin",
+    "etcd cluster",
+    "horizontal pod autoscaler",
+    "node-local DNS cache",
+    "cluster autoscaler",
+]
+tools = ["kubectl", "stern", "crictl", "etcdctl", "k9s", "helm", "kustomize"]
+typical_symptoms = [
+    "pods stuck in CrashLoopBackoff after a node reboot",
+    "ingress returns 502 for a single backend service",
+    "HPA scales up but pods never become Ready",
+    "node enters NotReady during a rolling kernel upgrade",
+    "PVC stuck Pending after storageclass migration",
+]
+
+[database]
+display_name = "Database"
+weight_large = 22
+priority_skew = ["P1", "P2", "P2"]
+components = [
+    "primary SQL replica",
+    "read-replica pair",
+    "connection pooler",
+    "WAL archive process",
+    "logical replication slot",
+    "vacuum / autovacuum daemon",
+    "table partitioning scheme",
+]
+tools = ["psql equivalent client", "pg_stat_activity-style views", "explain analyze", "pgbouncer logs", "iostat", "pidstat"]
+typical_symptoms = [
+    "query latency p99 jumps from 20ms to 4s",
+    "replication lag growing unbounded after midnight cron",
+    "connection pool saturated, application threads blocked",
+    "deadlocks spike during a release window",
+    "autovacuum cancels under sustained write load",
+]
+
+[auth]
+display_name = "Authentication"
+weight_large = 18
+priority_skew = ["P1", "P2"]
+components = [
+    "OIDC identity provider",
+    "SAML federation gateway",
+    "session token cache",
+    "JWT signing key rotation service",
+    "directory replication",
+    "MFA push-notification service",
+]
+tools = ["jwt.io equivalent decoder", "openssl s_client", "ldapsearch", "pam-test", "session-trace"]
+typical_symptoms = [
+    "users intermittently get 401 after a successful login",
+    "JWT signature validation fails for a subset of tokens",
+    "SAML assertions rejected as expired despite clock sync",
+    "MFA push notifications delivered but never accepted",
+    "directory sync lag causing stale group membership",
+]
+
+[storage]
+display_name = "Storage"
+weight_large = 18
+priority_skew = ["P2", "P2", "P3"]
+components = [
+    "object storage bucket replication",
+    "block storage volume snapshot",
+    "distributed filesystem metadata server",
+    "SAN multipath driver",
+    "cold-tier archive lifecycle policy",
+    "backup orchestrator",
+]
+tools = ["s3-style CLI", "fio", "iostat", "smartctl", "multipath -ll", "rsync --dry-run"]
+typical_symptoms = [
+    "write latency on one volume jumps after a snapshot",
+    "object replication lag grows past SLA threshold",
+    "filesystem metadata server fails over every few hours",
+    "backup job completes successfully but verification fails",
+    "lifecycle policy deletes objects earlier than expected",
+]
+
+[monitoring]
+display_name = "Monitoring"
+weight_large = 18
+priority_skew = ["P2", "P3", "P3"]
+components = [
+    "metrics ingestion pipeline",
+    "log aggregation forwarder",
+    "alertmanager-equivalent",
+    "tracing collector",
+    "long-term metrics storage",
+    "synthetic-probe runner",
+]
+tools = ["promtool-equivalent", "log-tail", "trace-query", "alert-history", "tsdb-cli"]
+typical_symptoms = [
+    "alerts fire and resolve within seconds in a flapping pattern",
+    "metrics ingestion lag causing dashboard staleness",
+    "log forwarder back-pressure dropping events silently",
+    "trace sampler rate misconfigured, missing critical spans",
+    "synthetic probes report green while real users see errors",
+]
+
+[platform]
+display_name = "Platform infrastructure"
+weight_large = 19
+priority_skew = ["P2", "P2", "P3"]
+components = [
+    "CI runner pool",
+    "secrets manager",
+    "internal DNS for service discovery",
+    "shared message broker",
+    "feature-flag service",
+    "build artifact registry",
+]
+tools = ["runner-logs", "vault-style CLI", "broker-admin", "registry-gc", "flag-history"]
+typical_symptoms = [
+    "CI pipelines stall on the same stage across all repos",
+    "secret rotation breaks one downstream consumer",
+    "service discovery returns stale endpoints after a deploy",
+    "message broker queue depth grows unbounded",
+    "feature flag evaluation latency spikes during peak hours",
+]

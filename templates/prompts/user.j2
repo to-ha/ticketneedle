@@ -1,0 +1,121 @@
+Generate one major-incident ticket using the embedded needles below.
+
+## Ticket parameters
+
+- Ticket ID: {{ ticket_id }}
+- Domain: {{ domain.display_name }}
+- Priority: {{ priority }}
+- Incident reported at: {{ needles.bonus.incident_timestamp }}
+- Length target: {{ length_bucket.label }} (~{{ length_bucket.target_words }} words total)
+
+## Embedded needles
+
+### PRIMARY needle — resolution steps
+
+These steps must appear under the `## Resolution steps` section as a
+numbered Markdown list, **verbatim and in this exact order**. Do not
+paraphrase, split, merge, or re-order them.
+
+{% for step in needles.primary.resolution_steps -%}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+
+### BONUS needles
+
+- **root_cause** — appears in the `## Post-mortem note` section. COPY
+  THIS SENTENCE EXACTLY, character for character, **INCLUDING THE FINAL
+  PERIOD**. Do not extend it with a comma or "leading to..." clause.
+  Do not paraphrase. If you want to add context after it, start a NEW
+  sentence after the period.
+  > {{ needles.bonus.root_cause }}
+
+- **key_command** — appears in a fenced code block (triple backtick)
+  inside the `## Diagnosis steps and hypotheses` section. The code
+  block must contain ONLY this exact line, character for character:
+  ```
+  {{ needles.bonus.key_command }}
+  ```
+
+- **escalation_path** — appears under `## Escalation timeline` as a
+  chronological list. Each entry is a role + first name. Use these
+  entries in this exact order:
+{% for entry in needles.bonus.escalation_path %}
+  - {{ entry }}
+{%- endfor %}
+
+- **incident_timestamp** — appears in the header list under "Reported"
+  exactly as `{{ needles.bonus.incident_timestamp }}`.
+
+## Focus for this ticket
+
+This incident is centered on **{{ focus.component }}**. Keep the focus
+tight — do NOT introduce other components from the wider domain that
+are not directly involved in this specific incident.
+
+The Symptom section should be inspired by ONE observable pattern. Use
+the following as your starting point and elaborate naturally — do not
+copy it verbatim and do not list multiple unrelated patterns:
+
+  {{ focus.symptom }}
+
+Tools the engineer most likely reached for: {{ focus.tools | join(", ") }}.
+
+{% if cluster -%}
+## Symptom note
+
+This ticket shares the following observable symptom with related
+tickets in the corpus:
+
+> {{ cluster.shared_symptom }}
+
+The shared symptom MUST appear in your `## Symptom` section, paraphrased
+in your own words but recognizably the same observation. Do NOT name or
+group this ticket with any "cluster", "related tickets", or "similar
+incidents" in the body — the relationship is only structural to the
+benchmark, not editorial to the reader. The root_cause and resolution
+above are SPECIFIC to this ticket.
+
+{% endif -%}
+## Allowed first-name pool
+
+Use only names from this list when introducing people in the
+escalation timeline or diagnosis section:
+
+{{ name_pool | join(", ") }}
+
+## Required Markdown structure
+
+Use these exact H1 / H2 headings, in this order, and use a simple
+bulleted list (NOT a Markdown table) for the header fields:
+
+```
+# Major Incident — {{ ticket_id }}
+
+- **Ticket ID:** {{ ticket_id }}
+- **Reported:** {{ needles.bonus.incident_timestamp }}
+- **Priority:** {{ priority }}
+- **Domain:** {{ domain.display_name }}
+- **Status:** Resolved
+
+## Symptom
+
+(3-5 paragraphs describing what users / monitoring observed; one coherent symptom complex, not a list of unrelated symptoms)
+
+## Escalation timeline
+
+(chronological list of who got involved when, using the escalation_path entries above and the allowed first-name pool)
+
+## Diagnosis steps and hypotheses
+
+(what was tried, what hypotheses were considered and ruled out, what evidence pointed at the eventual root cause; MUST include the key_command in a fenced code block)
+
+## Resolution steps
+
+(numbered list — verbatim resolution_steps from PRIMARY needle, in order)
+
+## Post-mortem note
+
+(short paragraph including the root_cause sentence verbatim)
+```
+
+Now write the ticket. Output the Markdown only, starting with `# Major Incident — {{ ticket_id }}`.

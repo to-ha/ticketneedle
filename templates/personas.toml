@@ -1,0 +1,19 @@
+# Anonymized first-name pool used for escalation timelines.
+# No surnames, no real-people associations. Mix of regions / origins.
+
+first_names = [
+    "Alice", "Mark", "Priya", "Carlos", "Nina", "Diego", "Sara", "Yuki",
+    "Tomas", "Imani", "Lukas", "Anya", "Rafael", "Mei", "Sven", "Leila",
+    "Kai", "Nora", "Bashir", "Ines", "Jonas", "Amelia", "Dmitri", "Kenji",
+    "Aisha", "Felix", "Olu", "Hana", "Pavel", "Maya", "Ravi", "Linnea",
+    "Theo", "Zara", "Mateo", "Eva", "Jin", "Sofia", "Nikolai", "Liu",
+    "Rahul", "Camille", "Ahmed", "Greta", "Hiro", "Sade", "Otto", "Iris",
+    "Bruno", "Tara",
+]
+
+# Generic role labels — use seniority + function, never company-specific.
+[roles]
+L1 = ["L1 SRE on-call", "L1 Network operations", "L1 Database operator", "L1 Platform support"]
+L2 = ["L2 SRE", "L2 Network engineer", "L2 Database engineer", "L2 Platform engineer", "L2 Security analyst"]
+L3 = ["L3 SRE / incident commander", "L3 Network architect", "L3 DBA lead", "L3 Platform lead", "L3 Security lead"]
+mgmt = ["On-call manager", "Service owner", "Engineering manager"]

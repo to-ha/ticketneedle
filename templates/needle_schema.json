@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ticket needle definition",
+  "description": "One entry per ticket in <size>/index.json — records the ground-truth needles that the benchmark will probe.",
+  "type": "object",
+  "required": ["ticket_id", "primary", "bonus", "metadata"],
+  "additionalProperties": false,
+  "properties": {
+    "ticket_id": {
+      "type": "string",
+      "pattern": "^INC-2026-\\d{4}$"
+    },
+    "primary": {
+      "type": "object",
+      "required": ["resolution_steps"],
+      "additionalProperties": false,
+      "properties": {
+        "resolution_steps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 7,
+          "items": { "type": "string", "minLength": 10 }
+        }
+      }
+    },
+    "bonus": {
+      "type": "object",
+      "required": ["root_cause", "key_command", "escalation_path", "incident_timestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "root_cause": { "type": "string", "minLength": 20 },
+        "key_command": { "type": "string", "minLength": 3 },
+        "escalation_path": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "type": "string" }
+        },
+        "incident_timestamp": {
+          "type": "string",
+          "pattern": "^2026-\\d{2}-\\d{2} \\d{2}:\\d{2} UTC$"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["domain", "length_bucket", "priority", "cluster"],
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "enum": ["network", "kubernetes", "database", "auth", "storage", "monitoring", "platform"]
+        },
+        "length_bucket": {
+          "enum": ["short", "medium", "long"]
+        },
+        "priority": {
+          "enum": ["P1", "P2", "P3"]
+        },
+        "cluster": {
+          "type": ["string", "null"],
+          "description": "Hallucination-trap cluster name, or null if standalone"
+        }
+      }
+    }
+  }
+}

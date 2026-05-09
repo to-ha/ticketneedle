@@ -1,0 +1,57 @@
+# Hallucination-trap clusters.
+# Each cluster has multiple variant tickets that share a near-identical
+# symptom but have DIFFERENT root causes and DIFFERENT resolutions. The
+# benchmark uses these to test whether a model retrieves the correct
+# ticket's resolution rather than mixing across cluster members.
+#
+# Per cluster: one variant becomes one ticket. The generator picks
+# `count_*` variants for each corpus size, distributing across the
+# corpus randomly (seeded).
+
+[clusters.dns_latency]
+domain = "network"
+shared_symptom = "Outbound API calls intermittently take 5-10 seconds because DNS resolution stalls; the slowdown disappears for a few minutes after a resolver cache flush."
+count_small = 2
+count_medium = 3
+count_large = 4
+variants = [
+    { root_cause_hint = "Recursive resolver hit upstream rate limit on a single authoritative zone", resolution_hint = "Increase local cache negative-TTL to 60s and add a second upstream resolver for failover" },
+    { root_cause_hint = "DNSSEC validation failure on one delegated zone caused fallback retries to expire the resolver budget", resolution_hint = "Disable DNSSEC validation for that specific zone until upstream re-signs the keys" },
+    { root_cause_hint = "Conntrack table on the stateful firewall exhausted under burst load, dropping new UDP/53 flows", resolution_hint = "Raise net.netfilter.nf_conntrack_max and shorten UDP timeout from 30s to 10s" },
+    { root_cause_hint = "EDNS0 buffer-size mismatch caused fragmentation that the upstream resolver dropped silently", resolution_hint = "Force edns-buffer-size=1232 in resolver config and restart the daemon" },
+]
+
+[clusters.db_conn_drops]
+domain = "database"
+shared_symptom = "Application connection pool reports periodic spikes of dropped connections; the pattern appears every 30-45 minutes and clears within a minute."
+count_small = 1
+count_medium = 2
+count_large = 3
+variants = [
+    { root_cause_hint = "Pooler health-check killed idle backends mid-transaction during a graceful pool resize", resolution_hint = "Disable health-check kill on idle connections and add a 60s grace window before resize evicts" },
+    { root_cause_hint = "Logical replication slot grew past disk threshold and the writer paused while WAL was flushed", resolution_hint = "Drop the orphaned replication slot and add a monitoring alert at 30 GB slot size" },
+    { root_cause_hint = "Background job opened many short-lived connections that exhausted the per-IP connection limit", resolution_hint = "Add a connection pooler in front of the batch job and raise per-IP limit from 50 to 200" },
+]
+
+[clusters.pod_crashloop]
+domain = "kubernetes"
+shared_symptom = "A specific deployment enters CrashLoopBackoff within 30 seconds of pod start; pod logs show a single line and then the container exits with code 137."
+count_small = 1
+count_medium = 2
+count_large = 3
+variants = [
+    { root_cause_hint = "Memory limit was reduced in a recent rollout and the JVM hit OOMKill before reaching steady state", resolution_hint = "Raise memory limit back to 2 GiB and set a -Xmx of 1500m to leave headroom" },
+    { root_cause_hint = "Liveness probe interval shorter than container startup time caused premature kill before the app finished warmup", resolution_hint = "Increase initialDelaySeconds on the liveness probe to 60s and add a separate startupProbe" },
+    { root_cause_hint = "Node had a stale CNI bridge after a kernel upgrade; new pods could not reach the cluster DNS within the probe timeout", resolution_hint = "Drain the node, restart the CNI daemon, and re-add the node to the pool" },
+]
+
+[clusters.tls_handshake]
+domain = "auth"
+shared_symptom = "Outbound HTTPS calls to a partner endpoint fail at the TLS handshake stage with a generic 'handshake failure' error; behavior is bimodal — half the requests succeed, half fail."
+count_small = 0
+count_medium = 1
+count_large = 2
+variants = [
+    { root_cause_hint = "Partner rotated their server certificate to use an intermediate CA we did not have in the trust store", resolution_hint = "Add the new intermediate CA bundle to the system trust store and reload the connection pool" },
+    { root_cause_hint = "Two outbound proxies presented different SNI behavior; only one negotiated the right cipher", resolution_hint = "Pin the cipher list to the partner's documented set and remove the legacy proxy from rotation" },
+]
