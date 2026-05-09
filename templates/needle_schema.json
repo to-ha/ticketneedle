@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Ticket needle definition",
+  "title": "ticketneedle index entry",
   "description": "One entry per ticket in <size>/index.json — records the ground-truth needles that the benchmark will probe.",
   "type": "object",
   "required": ["ticket_id", "primary", "bonus", "metadata"],
