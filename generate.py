@@ -82,6 +82,37 @@ def _insert_key_command(markdown: str, key_command: str) -> str:
     return markdown[:insertion_point] + snippet + markdown[insertion_point:]
 
 
+def _repair_escalation_entry(markdown: str, entry: str) -> str:
+    """If an escalation entry is missing, try common LLM-drift variants.
+
+    The entry format is 'HH:MM — Role: Name'. Llamas occasionally drop the
+    leading zero in the hour ('0:05' instead of '00:05') or substitute the
+    em-dash with a regular hyphen. Both keep the body unique enough to
+    target a safe in-place substitution.
+    """
+    if entry in markdown:
+        return markdown
+    if " — " not in entry:
+        return markdown
+    ts, body = entry.split(" — ", 1)
+    try:
+        hour, minute = ts.split(":")
+        no_lead_ts = f"{int(hour)}:{minute}"
+    except ValueError:
+        no_lead_ts = ts
+    variants = [
+        f"{ts} - {body}",          # em-dash → hyphen
+        f"{no_lead_ts} — {body}",  # leading zero dropped
+        f"{no_lead_ts} - {body}",  # both
+        f"{ts}— {body}",           # em-dash without leading space
+        f"{ts} —{body}",           # em-dash without trailing space
+    ]
+    for v in variants:
+        if v in markdown:
+            return markdown.replace(v, entry, 1)
+    return markdown
+
+
 def attempt_repair(
     markdown: str,
     needles,  # Needles
@@ -102,6 +133,13 @@ def attempt_repair(
         elif err.startswith("key_command not verbatim"):
             repaired = _insert_key_command(repaired, needles.bonus.key_command)
             did_repair = True
+        elif err.startswith("escalation_path entry not verbatim"):
+            for entry in needles.bonus.escalation_path:
+                if entry not in repaired:
+                    new_repaired = _repair_escalation_entry(repaired, entry)
+                    if new_repaired != repaired:
+                        repaired = new_repaired
+                        did_repair = True
     remaining = validate_ticket(repaired, needles)
     return repaired, remaining, did_repair
 

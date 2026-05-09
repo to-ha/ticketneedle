@@ -7,6 +7,7 @@ Generate one major-incident ticket using the embedded needles below.
 - Priority: {{ priority }}
 - Incident reported at: {{ needles.bonus.incident_timestamp }}
 - Length target: {{ length_bucket.label }} (~{{ length_bucket.target_words }} words total)
+- **Section sizing**: {{ length_bucket.structure_hint }}
 
 ## Embedded needles
 
@@ -37,8 +38,15 @@ paraphrase, split, merge, or re-order them.
   ```
 
 - **escalation_path** — appears under `## Escalation timeline` as a
-  chronological list. Each entry is a role + first name. Use these
-  entries in this exact order:
+  chronological bulleted list. Each entry already includes a UTC
+  timestamp (matching the header's "Reported" time, but with the date
+  implicit). Use these entries in this exact order, character for
+  character. **Important format details:** keep the leading-zero hour
+  (write `00:05`, NOT `0:05`); keep the em-dash separator (`—`,
+  Unicode U+2014, NOT a regular hyphen `-`); keep the exact role text
+  including capitalization. You may add one short sentence after each
+  entry describing what that person did, but the entry itself must
+  appear verbatim:
 {% for entry in needles.bonus.escalation_path %}
   - {{ entry }}
 {%- endfor %}
@@ -103,7 +111,7 @@ bulleted list (NOT a Markdown table) for the header fields:
 
 ## Escalation timeline
 
-(chronological list of who got involved when, using the escalation_path entries above and the allowed first-name pool)
+(use the escalation_path entries verbatim as bullet points, in the order given. After each bullet, add ONE short sentence describing what that person did. Do NOT introduce additional people not in the escalation_path.)
 
 ## Diagnosis steps and hypotheses
 

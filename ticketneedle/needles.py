@@ -204,13 +204,13 @@ _INCIDENT_WINDOW_START = datetime(2026, 1, 1, tzinfo=timezone.utc)
 _INCIDENT_WINDOW_DAYS = 127  # through 2026-05-07
 
 
-def deterministic_timestamp(rng: random.Random) -> str:
-    """Pick a timestamp in 2026-01-01..2026-05-07, formatted '%Y-%m-%d %H:%M UTC'."""
+def deterministic_timestamp(rng: random.Random) -> tuple[datetime, str]:
+    """Pick a timestamp in 2026-01-01..2026-05-07. Returns (datetime, formatted '%Y-%m-%d %H:%M UTC')."""
     days = rng.randint(0, _INCIDENT_WINDOW_DAYS)
     hour = rng.randint(0, 23)
     minute = rng.randint(0, 59)
     dt = _INCIDENT_WINDOW_START + timedelta(days=days, hours=hour, minutes=minute)
-    return dt.strftime("%Y-%m-%d %H:%M UTC")
+    return dt, dt.strftime("%Y-%m-%d %H:%M UTC")
 
 
 _DOMAIN_ROLE_KEYWORD = {
@@ -223,13 +223,27 @@ _DOMAIN_ROLE_KEYWORD = {
     "platform": "Platform",
 }
 
+# Per-layer minutes-after-previous-step ranges. Cumulative from incident time.
+_LAYER_OFFSET_MIN: dict[str, tuple[int, int]] = {
+    "L1": (0, 15),
+    "L2": (10, 45),
+    "L3": (20, 60),
+    "mgmt": (30, 90),
+}
+
 
 def deterministic_escalation_path(
     rng: random.Random,
     personas: dict,
     domain_key: str,
+    incident_dt: datetime,
 ) -> list[str]:
-    """Build a chronological escalation path: 2-4 entries 'Role: FirstName'."""
+    """Build a chronological escalation path with UTC timestamps relative to incident.
+
+    Entries look like '03:48 — L1 SRE on-call: Alice'. The hour/minute is
+    UTC (matches the header's 'Reported' timestamp); UTC is implicit and
+    not repeated on each line to keep entries scannable.
+    """
     depth = rng.randint(2, 4)
     layers = ["L1", "L2", "L3", "mgmt"][:depth]
     role_pool = personas["roles"]
@@ -238,12 +252,16 @@ def deterministic_escalation_path(
     domain_kw = _DOMAIN_ROLE_KEYWORD.get(domain_key, "")
 
     entries: list[str] = []
+    cumulative_min = 0
     for i, layer in enumerate(layers):
+        lo, hi = _LAYER_OFFSET_MIN[layer]
+        cumulative_min += rng.randint(lo, hi)
+        ts = (incident_dt + timedelta(minutes=cumulative_min)).strftime("%H:%M")
         options = role_pool[layer]
         matching = [r for r in options if domain_kw and domain_kw in r]
         role = rng.choice(matching) if matching else rng.choice(options)
         name = name_pool[i % len(name_pool)]
-        entries.append(f"{role}: {name}")
+        entries.append(f"{ts} — {role}: {name}")
     return entries
 
 
@@ -291,13 +309,17 @@ def build_needles(
         focus_tools=focus_tools,
         seed=seed,
     )
+    incident_dt, incident_ts_str = deterministic_timestamp(rng)
+    escalation_path = deterministic_escalation_path(
+        rng, personas, spec.domain_key, incident_dt
+    )
     needles = Needles(
         primary=PrimaryNeedles(resolution_steps=res_steps),
         bonus=BonusNeedles(
             root_cause=root_cause,
             key_command=key_command,
-            escalation_path=deterministic_escalation_path(rng, personas, spec.domain_key),
-            incident_timestamp=deterministic_timestamp(rng),
+            escalation_path=escalation_path,
+            incident_timestamp=incident_ts_str,
         ),
     )
     return needles, focus

@@ -27,9 +27,16 @@ the incident.
   Roles use generic seniority titles (L1 SRE, L2 Network engineer,
   L3 Database lead, On-call manager). No last names, no employee IDs,
   no Slack handles.
-- **Length discipline.** Match the requested length bucket. Short tickets
-  (~400 words) are crisp. Long tickets (~1500 words) include a richer
-  diagnosis section with multiple ruled-out hypotheses.
+- **Length discipline.** Match the requested length bucket and the
+  per-section word budgets. This is not a soft hint — short tickets
+  are crisp (~400 words total); long tickets are substantively long
+  (~1500 words total) and the Diagnosis section dominates with 4-6
+  ruled-out hypotheses, each with diagnostic evidence. A "long"
+  ticket without 4-6 distinct hypothesis subsections is incomplete.
+  When you reach the end of a section and have not used the budget,
+  add more specifics (additional commands tried, more evidence
+  details, what was observed in logs/metrics) — do NOT pad with
+  generic statements about "the importance of monitoring".
 
 ## Output format
 

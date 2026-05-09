@@ -12,8 +12,11 @@ first_names = [
 ]
 
 # Generic role labels — use seniority + function, never company-specific.
+# Naming convention: each role string contains the domain keyword used by
+# the deterministic-escalation-path filter (Network / Database / Platform /
+# Security / SRE) so the on-call handoff stays semantically plausible.
 [roles]
-L1 = ["L1 SRE on-call", "L1 Network operations", "L1 Database operator", "L1 Platform support"]
+L1 = ["L1 SRE on-call", "L1 Network operations", "L1 Database operator", "L1 Platform support", "L1 Security operations"]
 L2 = ["L2 SRE", "L2 Network engineer", "L2 Database engineer", "L2 Platform engineer", "L2 Security analyst"]
-L3 = ["L3 SRE / incident commander", "L3 Network architect", "L3 DBA lead", "L3 Platform lead", "L3 Security lead"]
+L3 = ["L3 SRE / incident commander", "L3 Network architect", "L3 Database lead", "L3 Platform lead", "L3 Security lead"]
 mgmt = ["On-call manager", "Service owner", "Engineering manager"]
