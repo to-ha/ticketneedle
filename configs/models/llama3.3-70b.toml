@@ -1,0 +1,12 @@
+# Local Llama 3.3 70B Q4_K_M (Metal). Same model used to generate the corpus —
+# included for self-consistency baseline (does the generator recall what it wrote?).
+name = "llama3.3-70b"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "llama3.3:70b"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 6000
+timeout = 600

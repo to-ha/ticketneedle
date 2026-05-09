@@ -1,0 +1,12 @@
+# Local Qwen 3.6 27B coding-tuned, MLX MXFP8.
+# Hero-02's "operational winner" on jquery: 308/320 matched, 0 hallucinations.
+name = "qwen3.6-coding-mxfp8"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "qwen3.6:27b-coding-mxfp8"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 6000
+timeout = 600

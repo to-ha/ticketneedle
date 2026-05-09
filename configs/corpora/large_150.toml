@@ -1,0 +1,9 @@
+# 150 synthetic IT-ops tickets (~120-130k tokens). Long-context stress test.
+# Models with <128k context will fail at preflight — load with the full context.
+name = "large_150"
+directory = "../ticketneedle-corpus/large_150"
+
+[sample]
+k = 16
+seed = 42
+pacing_seconds = 0.0

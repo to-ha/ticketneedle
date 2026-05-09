@@ -40,7 +40,9 @@ information is buried in a 100k-token corpus.
 ```
 templates/      prompts and structure templates fed to the generator
 generate.py     corpus generator (Ollama / llama3.3:70b)
-bench/          benchmark runner (extractor, scorer, runner) — to come
+bench/          benchmark runner (extractor, scorer, runner, client)
+bench.py        benchmark CLI
+configs/        corpus + model configs (TOML)
 tools/          validation, stats, plot
 ```
 
@@ -89,6 +91,41 @@ reproducible.
 `generation_seeds.json` (written into the output directory) records the
 base seed plus every per-ticket parameter and seed slot, so the corpus
 can be regenerated bit-identical.
+
+## Benchmarking
+
+Once a corpus is generated and committed under
+[ticketneedle-corpus](https://github.com/to-ha/ticketneedle-corpus),
+run the recall + hallucination benchmark against any OpenAI-compatible
+endpoint:
+
+```bash
+# Local (Ollama)
+.venv/bin/python bench.py --corpus small_30 --model qwen3.6-coding-mxfp8 --k 5
+
+# Cloud (config under configs/models/, API key in .secrets/)
+.venv/bin/python bench.py --corpus medium_80 --model gpt-5.1 --pacing 60
+```
+
+Per-run JSON dumps land in `results/<corpus>__<model>.json` for later
+aggregation.
+
+### Multi-slot scoring
+
+Each ticket is scored on:
+
+- **primary** — `resolution_steps` recall (codeneedle-style alignment via
+  `SequenceMatcher`, with optional whitespace + numbering tolerance).
+  The headline metric, directly comparable to codeneedle's per-function
+  recall.
+- **bonus** — four additional retrieval probes per ticket:
+  `root_cause` (substring + paraphrase-tolerant), `key_command` (exact),
+  `escalation_path` (order-preserving fraction of entries verbatim),
+  `incident_timestamp` (exact).
+
+A ticket "passes" when ≥50 % of its resolution_steps are recalled AND
+≥2 of 4 bonus slots match. Hallucinated lines (predicted lines not
+present in the expected resolution_steps) are reported separately.
 
 ## Inspiration and credit
 

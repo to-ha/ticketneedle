@@ -1,0 +1,8 @@
+# 30 synthetic IT-ops tickets (~26k tokens). Smoke / fast iteration.
+name = "small_30"
+directory = "../ticketneedle-corpus/small_30"
+
+[sample]
+k = 16          # falls back to all 30 if you pass --k 30
+seed = 42
+pacing_seconds = 0.0

@@ -16,3 +16,6 @@ build/
 
 # Generated corpus during dev — final corpus lives in ticketneedle-corpus repo
 out/
+
+# Per-run benchmark JSON dumps
+results/

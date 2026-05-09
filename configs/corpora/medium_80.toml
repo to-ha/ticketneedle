@@ -1,0 +1,8 @@
+# 80 synthetic IT-ops tickets (~67k tokens). Standard benchmark, codeneedle-jquery analogue.
+name = "medium_80"
+directory = "../ticketneedle-corpus/medium_80"
+
+[sample]
+k = 16
+seed = 42
+pacing_seconds = 0.0
