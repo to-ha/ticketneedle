@@ -182,31 +182,66 @@ def score(
 
 _SECTION_RE_CACHE: dict[str, re.Pattern[str]] = {}
 
+# The five known section names — used to find both the matching section
+# and the start of the *next* section (for cross-stack robustness against
+# format-drift, e.g. NVIDIA-CUDA-Ollama-runner output that omits the `## `
+# Markdown header but keeps the section names as plain text on their own
+# line).
+_KNOWN_SECTIONS = (
+    "resolution_steps",
+    "root_cause",
+    "key_command",
+    "escalation_path",
+    "incident_timestamp",
+)
 
-def _extract_section(response: str, section_name: str) -> str:
-    """Return the body of a `## <section_name>` heading.
 
-    Tolerates leading whitespace, optional bold markers, and case
-    variations on the heading. If no such heading is present, falls
-    back to the full response — so primary-only outputs (no labeled
-    sections) still score against the historical "scan everywhere"
-    behavior.
+def _section_header_pattern(name: str) -> re.Pattern[str]:
+    """Pattern that matches a section heading line, with or without `## ` prefix.
+
+    Accepts:
+      `## resolution_steps`
+      `## **resolution_steps**`
+      `resolution_steps`
+      `**resolution_steps**`
+      `resolution_steps:`
+    All anchored to a full line (^ ... $) to avoid false-positive matches
+    on the section name appearing inside body text.
     """
-    pat = _SECTION_RE_CACHE.get(section_name)
+    pat = _SECTION_RE_CACHE.get(name)
     if pat is None:
-        # Match: '## resolution_steps', '##  Resolution_Steps', '## **resolution_steps**', etc.
         pat = re.compile(
-            rf"^\s*##\s*\**\s*{re.escape(section_name)}\s*\**\s*$",
+            rf"^\s*(?:##\s*)?\**\s*{re.escape(name)}\s*\**\s*:?\s*$",
             re.MULTILINE | re.IGNORECASE,
         )
-        _SECTION_RE_CACHE[section_name] = pat
+        _SECTION_RE_CACHE[name] = pat
+    return pat
 
+
+def _extract_section(response: str, section_name: str) -> str:
+    """Return the body of a `<section_name>` heading.
+
+    Falls back to the full response when no heading is present (graceful
+    for primary-only outputs that have no labeled sections at all).
+    """
+    pat = _section_header_pattern(section_name)
     m = pat.search(response)
     if not m:
         return response
     body_start = m.end()
-    next_m = re.search(r"^\s*##\s+", response[body_start:], flags=re.MULTILINE)
-    body_end = body_start + next_m.start() if next_m else len(response)
+
+    # The body ends at the next *known* section heading — not just any
+    # `##`. This is what gives us robustness against runners that emit
+    # plain-text section names without `## `: the body still terminates
+    # cleanly at the next section name we recognize.
+    next_starts = []
+    for other in _KNOWN_SECTIONS:
+        if other == section_name:
+            continue
+        nm = _section_header_pattern(other).search(response, body_start)
+        if nm:
+            next_starts.append(nm.start())
+    body_end = min(next_starts) if next_starts else len(response)
     return response[body_start:body_end].strip()
 
 

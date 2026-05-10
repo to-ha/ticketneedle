@@ -90,6 +90,7 @@ def load_model(name_or_path: str) -> tuple[ModelConfig, bool]:
         stop=client_raw.get("stop"),
         use_max_completion_tokens=bool(client_raw.get("use_max_completion_tokens", False)),
         omit_temperature=bool(client_raw.get("omit_temperature", False)),
+        anthropic_cache=client_raw.get("anthropic_cache"),  # None = auto-detect
     )
     return (
         ModelConfig(

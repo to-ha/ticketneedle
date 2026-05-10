@@ -31,6 +31,17 @@ class ClientConfig:
     stop: list[str] | None = None
     use_max_completion_tokens: bool = False
     omit_temperature: bool = False
+    # Anthropic prompt caching. Auto-detected from base_url when None.
+    # Set explicitly to True/False to force the behavior (debugging,
+    # cost A/B comparisons, or future API-format changes).
+    anthropic_cache: bool | None = None
+
+
+def _is_anthropic(base_url: str) -> bool:
+    return "anthropic.com" in base_url.lower()
+
+
+_anthropic_cache_logged: set[str] = set()
 
 
 def _parse_retry_after(headers: httpx.Headers, attempt: int) -> float:
@@ -44,10 +55,57 @@ def _parse_retry_after(headers: httpx.Headers, attempt: int) -> float:
 
 
 def chat_complete(cfg: ClientConfig, system: str | None, user: str) -> str:
+    # Decide once per process whether to use Anthropic-style cache markup.
+    use_anthropic_cache = (
+        cfg.anthropic_cache
+        if cfg.anthropic_cache is not None
+        else _is_anthropic(cfg.base_url)
+    )
+
+    if use_anthropic_cache and cfg.base_url not in _anthropic_cache_logged:
+        print(
+            f"  Anthropic prompt cache: enabled (base_url={cfg.base_url})",
+            file=sys.stderr,
+        )
+        _anthropic_cache_logged.add(cfg.base_url)
+    elif (
+        not use_anthropic_cache
+        and _is_anthropic(cfg.base_url)
+        and cfg.base_url not in _anthropic_cache_logged
+    ):
+        print(
+            f"  Anthropic prompt cache: disabled (explicit override)",
+            file=sys.stderr,
+        )
+        _anthropic_cache_logged.add(cfg.base_url)
+
     messages: list[dict] = []
     if system:
         messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": user})
+
+    if use_anthropic_cache:
+        # Anthropic's OpenAI-compatible shim accepts the same
+        # cache_control={"type": "ephemeral", "ttl": "1h"} markup as the
+        # native API. The 1-hour TTL avoids cache-misses when 16-call
+        # benchmark runs with 70 s pacing exceed the 5-min default TTL
+        # (4 misses + 12 hits at 5-min vs 1 miss + 15 hits at 1-hour).
+        # Cache-write premium 2.0× (1h) vs 1.25× (5-min) is more than
+        # offset by avoiding the extra writes.
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": user,
+                        "cache_control": {"type": "ephemeral", "ttl": "1h"},
+                    }
+                ],
+            }
+        )
+    else:
+        messages.append({"role": "user", "content": user})
+
     if cfg.prefill_no_think:
         messages.append({"role": "assistant", "content": "<think>\n</think>\n\n"})
 
@@ -70,6 +128,9 @@ def chat_complete(cfg: ClientConfig, system: str | None, user: str) -> str:
     headers = {"Content-Type": "application/json"}
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
+    if use_anthropic_cache:
+        # Required to opt into 1-hour cache TTL on Anthropic
+        headers["anthropic-beta"] = "extended-cache-ttl-2025-04-11"
     url = f"{cfg.base_url.rstrip('/')}/v1/chat/completions"
 
     attempt = 0
