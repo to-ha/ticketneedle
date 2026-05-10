@@ -1,0 +1,16 @@
+# Gemma 4 26B in MLX bf16 — alternative quantization to test whether the
+# 26b-mxfp8 silent-failure is mxfp8-specific or a general issue with the
+# 26b architecture in MLX. bf16 = 52 GB resident, fits on ceres (128 GB).
+#
+# Identical settings to gemma4-26b-mxfp8.toml otherwise (no stop sequences;
+# we already ruled out stop as the cause).
+name = "gemma4-26b-mlx-bf16"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:26b-mlx-bf16"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 2400

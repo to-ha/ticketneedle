@@ -1,0 +1,12 @@
+# Gemma 4 31B coding-mtp bf16 — variant WITHOUT stop sequences. See
+# gemma4-26b-mxfp8-nostop.toml for rationale.
+name = "gemma4-31b-coding-mtp-bf16-nostop"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:31b-coding-mtp-bf16"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 2400

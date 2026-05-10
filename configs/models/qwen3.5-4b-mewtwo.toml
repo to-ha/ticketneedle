@@ -1,0 +1,15 @@
+# qwen3.5-4b on mewtwo (Razer Blade 14, RTX 4070 8 GB) for cross-stack
+# validation against the same model on M5 Max Apple Silicon.
+# Same Q4_K_M quantization, same model weights — only the runtime stack
+# differs (CUDA vs Metal/MLX).
+name = "qwen3.5-4b-mewtwo"
+suppress_thinking = true
+
+[client]
+base_url = "http://192.168.178.167:11434"
+model = "qwen3.5:4b"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 1500
+timeout = 1800
+prefill_no_think = true

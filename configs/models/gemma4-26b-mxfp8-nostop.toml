@@ -1,0 +1,19 @@
+# Gemma 4 26B mxfp8 — variant WITHOUT stop sequences.
+# The codeneedle-derived stop=["\n---", "\nTask:", "\nRules:"] caused 14/16
+# empty responses on the size-axis small_30 run. Hypothesis: gemma4-26b
+# emits "---" or similar at the start of its output (parroting the prompt
+# separator), and our stop matches the very first token. e2b/e4b were not
+# affected — same family, smaller sizes.
+#
+# This config keeps everything else identical to gemma4-26b-mxfp8.toml so
+# the only delta vs. the original measurement is the stop list.
+name = "gemma4-26b-mxfp8-nostop"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:26b-mxfp8"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 1800

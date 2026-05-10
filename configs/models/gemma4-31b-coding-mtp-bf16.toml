@@ -1,0 +1,17 @@
+# Gemma 4 31B coding-tuned (MTP variant), bf16, 256k context.
+# Cross-family pendant to qwen3.6-coding-mxfp8 — domain-tuning axis on
+# the gemma side. bf16 ≈ ~62 GB resident, beyond comfortable single-GPU
+# RAM budget — runs on ceres (128 GB) but not on smaller hardware.
+# Included as the upper bound for the domain-tuning comparison.
+# See gemma4-e2b-mxfp8 for shared Gemma 4 caveats.
+name = "gemma4-31b-coding-mtp-bf16"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:31b-coding-mtp-bf16"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 2400
+stop = ["\n---", "\nTask:", "\nRules:"]

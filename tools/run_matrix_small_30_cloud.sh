@@ -10,8 +10,6 @@
 #
 # Outputs same shape as the local matrix script.
 
-set -u
-
 cd "$(dirname "$0")/.."
 
 PY=.venv/bin/python

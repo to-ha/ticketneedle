@@ -1,0 +1,21 @@
+# Gemma 4 effective-2B, MLX MXFP8, text-only, 128k context.
+# Size-axis: smallest gemma4 — fits in 8-12 GB VRAM/UMA budget.
+# Cross-family counterpart to qwen3.5-4b-128k.
+#
+# Hero-02 caveats for Gemma 4:
+# - Non-reasoning by default — no prefill_no_think needed
+# - Parrots the prompt suffix back; `stop` is essential
+# - Sliding-Window Attention with short look-back — expect recall cliff on
+#   large_150 (~125k tokens). If it happens, that's the SWA tax, not our bug
+# - Whitespace normalization — relax_indent (CLI default) handles it
+name = "gemma4-e2b-mxfp8"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:e2b-mxfp8"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 1800
+stop = ["\n---", "\nTask:", "\nRules:"]

@@ -1,0 +1,15 @@
+# Gemma 4 26B-a4b instruction-tuned, Q4_K_M (Metal/llama.cpp).
+# Alternative to mxfp8 to isolate the 26b silent-failure: if mxfp8 is broken
+# but Q4_K_M (different backend, different quantization) works, the issue is
+# specific to the mxfp8 build. The "a4b" tag is the multimodal base —
+# multimodal capabilities are unused for our text-only benchmark.
+name = "gemma4-26b-a4b-it-q4_K_M"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:26b-a4b-it-q4_K_M"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 1800

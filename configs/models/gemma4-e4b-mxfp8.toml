@@ -1,0 +1,15 @@
+# Gemma 4 effective-4B, MLX MXFP8, text-only, 128k context.
+# Size-axis: mid-small gemma4 — fits in 16 GB VRAM/UMA budget.
+# Cross-family counterpart to qwen3.5-9b-128k.
+# See gemma4-e2b-mxfp8 for shared Gemma 4 caveats (SWA, prompt-parrot, whitespace).
+name = "gemma4-e4b-mxfp8"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:e4b-mxfp8"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 1800
+stop = ["\n---", "\nTask:", "\nRules:"]

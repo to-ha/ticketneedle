@@ -1,0 +1,14 @@
+# Gemma 4 31B, MLX MXFP8, text-only, 256k context.
+# Size-axis: 32 GB-class — top general gemma4 in MLX.
+# See gemma4-e2b-mxfp8 for shared Gemma 4 caveats.
+name = "gemma4-31b-mxfp8"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "gemma4:31b-mxfp8"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 2000
+timeout = 1800
+stop = ["\n---", "\nTask:", "\nRules:"]

@@ -1,0 +1,17 @@
+# Local Qwen 3.5 4B (small), Q4_K_M, 128k context (Modelfile re-tag).
+# Size-axis: smallest qwen3.5 — fits comfortably in 8 GB VRAM/UMA budget
+# (3.4 GB model + KV cache for 128k context).
+#
+# prefill_no_think is required even at 4B — qwen3.5 family is reasoning-on
+# by default; `/no_think` alone is ignored. See Hero-02 stage-1 notes.
+name = "qwen3.5-4b-128k"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "qwen3.5:4b-128k"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 1500
+timeout = 1800
+prefill_no_think = true
