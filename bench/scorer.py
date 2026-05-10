@@ -1,19 +1,22 @@
 """Score model output against a ticket's planted needles.
 
-Multi-slot scoring:
-- primary: resolution_steps as a multi-line block (codeneedle-style alignment
-  via SequenceMatcher, optional whitespace tolerance)
-- bonus.root_cause: substring presence, with a paraphrase-tolerant fallback
-- bonus.key_command: exact substring presence
-- bonus.escalation_path: order-preserving fraction of entries present verbatim
-- bonus.incident_timestamp: exact substring presence
+The benchmark prompt asks for five labeled sections:
+  ## resolution_steps   — primary needle, multi-line block
+  ## root_cause         — bonus, one sentence
+  ## key_command        — bonus, exact string
+  ## escalation_path    — bonus, ordered list
+  ## incident_timestamp — bonus, exact string
 
-The primary score is the headline metric (recall@N + hallucination count,
-directly comparable to codeneedle's jquery numbers from Hero-02). The bonus
-slots are auxiliary signals that probe different retrieval shapes.
+Each slot is scored against the body of its own section (parsed out of
+the response). Hallucinations are counted only inside the
+`## resolution_steps` section, so emitting other sections does not inflate
+the hallucination count for the primary metric. If a section heading is
+missing, the matcher falls back to the full response — graceful for
+models that ignore the structure.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from enum import Enum
@@ -74,7 +77,8 @@ def score(
     primary = ticket.primary
     bonus = ticket.bonus
 
-    pred_lines = _clean_output(response)
+    primary_section = _extract_section(response, "resolution_steps")
+    pred_lines = _clean_output(primary_section)
     norm = _norm_relaxed if relax_indent else _norm
 
     exp_primary = [norm(l) for l in primary]
@@ -108,16 +112,21 @@ def score(
     )
     hallucinated = max(0, hallucinated)
 
-    # Bonus slot scoring
+    # Bonus slot scoring — each in its own section, with full-response fallback.
     rc_text = bonus["root_cause"]
     kc_text = bonus["key_command"]
     ts_text = bonus["incident_timestamp"]
     esc_entries = bonus["escalation_path"]
 
-    rc_match = rc_text in response or _root_cause_paraphrase_match(rc_text, response)
-    kc_match = kc_text in response
-    ts_match = ts_text in response
-    esc_present = sum(1 for e in esc_entries if e in response)
+    rc_section = _extract_section(response, "root_cause")
+    kc_section = _extract_section(response, "key_command")
+    ts_section = _extract_section(response, "incident_timestamp")
+    esc_section = _extract_section(response, "escalation_path")
+
+    rc_match = rc_text in rc_section or _root_cause_paraphrase_match(rc_text, rc_section)
+    kc_match = kc_text in kc_section
+    ts_match = ts_text in ts_section
+    esc_present = sum(1 for e in esc_entries if e in esc_section)
     esc_score = esc_present / max(1, len(esc_entries))
     esc_passed = esc_score >= ESCALATION_PASS_FRACTION
 
@@ -127,7 +136,7 @@ def score(
     primary_passed = primary_matched >= max(2, int(len(exp_primary) * PRIMARY_PASS_FRACTION))
 
     expected_display = [l.rstrip() for l in primary]
-    pred_display = [l.rstrip() for l in pred_lines]
+    pred_display = [l.rstrip() for l in _clean_output(primary_section)]
     while pred_display and pred_display[-1] == "":
         pred_display.pop()
     if len(pred_display) != len(pred):
@@ -169,6 +178,36 @@ def score(
         expected_tagged=expected_tagged,
         predicted_tagged=predicted_tagged,
     )
+
+
+_SECTION_RE_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _extract_section(response: str, section_name: str) -> str:
+    """Return the body of a `## <section_name>` heading.
+
+    Tolerates leading whitespace, optional bold markers, and case
+    variations on the heading. If no such heading is present, falls
+    back to the full response — so primary-only outputs (no labeled
+    sections) still score against the historical "scan everywhere"
+    behavior.
+    """
+    pat = _SECTION_RE_CACHE.get(section_name)
+    if pat is None:
+        # Match: '## resolution_steps', '##  Resolution_Steps', '## **resolution_steps**', etc.
+        pat = re.compile(
+            rf"^\s*##\s*\**\s*{re.escape(section_name)}\s*\**\s*$",
+            re.MULTILINE | re.IGNORECASE,
+        )
+        _SECTION_RE_CACHE[section_name] = pat
+
+    m = pat.search(response)
+    if not m:
+        return response
+    body_start = m.end()
+    next_m = re.search(r"^\s*##\s+", response[body_start:], flags=re.MULTILINE)
+    body_end = body_start + next_m.start() if next_m else len(response)
+    return response[body_start:body_end].strip()
 
 
 def _norm(s: str) -> str:
