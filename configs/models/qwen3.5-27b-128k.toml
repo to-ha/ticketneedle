@@ -1,0 +1,17 @@
+# Local Qwen 3.5 27B Q4_K_M (Metal/llama.cpp), 128k context variant.
+# Quantization-axis baseline against qwen3.5-mxfp8 (same generation,
+# same model, different engine + quantization).
+#
+# prefill_no_think is required even for Q4 — Qwen 3.5 is reasoning-on
+# by default and `/no_think` is ignored. See Hero-02 stage-1 notes.
+name = "qwen3.5-27b-128k"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "qwen3.5-27b-128k:latest"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 1500
+timeout = 1800
+prefill_no_think = true

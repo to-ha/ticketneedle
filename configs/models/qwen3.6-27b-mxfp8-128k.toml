@@ -1,0 +1,16 @@
+# Local Qwen 3.6 27B (general), MLX MXFP8, 128k context variant.
+# General-tuned counterpart to qwen3.6-coding-mxfp8 — included for the
+# domain-tuning axis comparison in Hero-03.
+#
+# prefill_no_think is REQUIRED for Qwen 3.5/3.6 — see qwen3.5 config.
+name = "qwen3.6-27b-mxfp8-128k"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "qwen3.6-27b-mxfp8-128k:latest"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 1500
+timeout = 1800
+prefill_no_think = true

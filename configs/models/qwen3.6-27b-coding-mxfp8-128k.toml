@@ -1,9 +1,10 @@
 # Local Qwen 3.6 27B coding-tuned, MLX MXFP8, 128k context variant.
 # Hero-02's "operational winner" on jquery: 308/320 matched, 0 hallucinations.
-# The -128k tag is required because the default qwen3.6:27b-coding-mxfp8 ships
-# with a 4k Ollama context, which is too small for the medium_80/large_150
-# corpora (~67k / ~125k tokens). The 128k tag was pulled during Hero-02 work.
-name = "qwen3.6-coding-mxfp8"
+#
+# prefill_no_think is REQUIRED for Qwen 3.5/3.6 — `/no_think` alone is ignored
+# by these models and they burn the entire max_tokens budget on reasoning.
+# See Hero-02 stage-2 notes.
+name = "qwen3.6-27b-coding-mxfp8-128k"
 suppress_thinking = true
 
 [client]
@@ -11,5 +12,6 @@ base_url = "http://localhost:11434"
 model = "qwen3.6-27b-coding-mxfp8-128k:latest"
 api_key = "not-needed"
 temperature = 0.0
-max_tokens = 6000
-timeout = 600
+max_tokens = 1500
+timeout = 1800
+prefill_no_think = true

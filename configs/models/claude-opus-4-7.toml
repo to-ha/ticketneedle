@@ -1,0 +1,15 @@
+# Anthropic Claude Opus 4.7 via the OpenAI-compatible shim.
+# Opus 4.7 deprecated `temperature`; the field MUST be omitted from the
+# request payload or the API rejects it.
+# Pricing: ~5x Sonnet. Budget accordingly — small_30 k=16 is roughly $1-2.
+name = "claude-opus-4-7"
+suppress_thinking = false
+
+[client]
+base_url = "https://api.anthropic.com"
+model = "claude-opus-4-7"
+api_key = "file:.secrets/anthropic.key"
+temperature = 0.0
+max_tokens = 1500
+timeout = 600
+omit_temperature = true

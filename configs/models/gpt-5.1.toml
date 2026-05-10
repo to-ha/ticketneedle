@@ -1,0 +1,14 @@
+# OpenAI GPT-5.1 — general-purpose chat model. Counterpart to Sonnet 4.6.
+# Not reasoning-by-default (unlike GPT-5.2/5.5), but temperature=1.0 is
+# required by the GPT-5 family.
+name = "gpt-5.1"
+suppress_thinking = false
+
+[client]
+base_url = "https://api.openai.com"
+model = "gpt-5.1"
+api_key = "file:.secrets/openai.key"
+temperature = 1.0
+max_tokens = 1500
+timeout = 300
+use_max_completion_tokens = true

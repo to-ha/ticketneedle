@@ -1,0 +1,18 @@
+# Local Qwen 3.5 27B (general), MLX MXFP8, 128k context variant.
+# Prior generation of the operational winner — included for the
+# generation-axis comparison in Hero-03.
+#
+# prefill_no_think is REQUIRED for Qwen 3.5/3.6 — `/no_think` alone is
+# ignored by these models and they burn the entire max_tokens budget on
+# reasoning. See Hero-02 stage-2 notes.
+name = "qwen3.5-27b-mxfp8-128k"
+suppress_thinking = true
+
+[client]
+base_url = "http://localhost:11434"
+model = "qwen3.5-27b-mxfp8-128k:latest"
+api_key = "not-needed"
+temperature = 0.0
+max_tokens = 1500
+timeout = 1800
+prefill_no_think = true

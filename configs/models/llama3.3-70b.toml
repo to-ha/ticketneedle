@@ -5,7 +5,7 @@ suppress_thinking = true
 
 [client]
 base_url = "http://localhost:11434"
-model = "llama3.3:70b"
+model = "llama3.3:70b-128k"  # 131072 num_ctx variant created via Modelfile (default tag has 4k context)
 api_key = "not-needed"
 temperature = 0.0
 max_tokens = 6000
