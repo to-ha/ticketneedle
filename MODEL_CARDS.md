@@ -612,25 +612,54 @@ medium_80 -4 pp gap is within k=16 sample noise.
 
 ### Cross-stack: qwen3.5-27b-128k (Q4_K_M)
 
-| Stack | Corpus | Primary | Halluc | Pass | Avg latency | Δ vs Apple |
-|---|---|---|---|---|---|---|
-| Apple Metal | small_30 | 64/64 (100 %) | 0 | 16/16 | 34.6 s | — |
-| CUDA-Ollama (4090) | small_30 | 64/64 (100 %) | 0 | 16/16 | **55.4 s** | **1.6× slower** |
-| Apple Metal | medium_80 | 68/68 (100 %) | 0 | 16/16 | 58.4 s | — |
-| CUDA-Ollama (4090) | medium_80 | 68/68 (100 %) | 0 | 16/16 | **69.2 s** | **1.2× slower** |
-| Apple Metal | large_150 | 65/65 (100 %) | 0 | 16/16 | 93.1 s | — |
-| CUDA-Ollama (4090) | large_150 | (data pending — CPU-offload cliff expected) | | | | |
+| Stack | Corpus | Primary | Halluc | Pass | Avg latency (all 16) | Avg w/o cold | 1st call (cold) | Δ vs Apple (warm) |
+|---|---|---|---|---|---|---|---|---|
+| Apple Metal | small_30 | 64/64 (100 %) | 0 | 16/16 | 34.6 s | — | — | — |
+| CUDA-Ollama (4090) | small_30 | 64/64 (100 %) | 0 | 16/16 | 55.4 s | **52.2 s** | 104.1 s | 1.5× slower (still) |
+| Apple Metal | medium_80 | 68/68 (100 %) | 0 | 16/16 | 58.4 s | — | — | — |
+| CUDA-Ollama (4090) | medium_80 | 68/68 (100 %) | 0 | 16/16 | 69.2 s | **63.8 s** | 150.0 s | 1.1× slower |
+| Apple Metal | large_150 | 65/65 (100 %) | 0 | 16/16 | 93.1 s | — | — | — |
+| CUDA-Ollama (4090) | large_150 | 65/65 (100 %) | 0 | 16/16 | 79.2 s | **65.9 s** | 278.7 s | **1.4× faster** |
 
-The 17 GB Q4 model + 128 k KV-cache pressure 24 GB VRAM. Observed
-peak VRAM 23.2 / 24 GB during small_30 already; medium_80 KV-cache
-growth (~5 GB) likely forces partial CPU-offload. Apple unified
-memory has no equivalent cliff — the M5 Max can address all 17 GB
-+ KV from a single 128 GB pool.
+**Identical recall (100 % everywhere), warm-state latency comparable to
+or better than Apple.** The 27B Q4 model on a 24 GB-VRAM 4090 runs
+fine after warm-up — the cold-start cost is the visible tax.
 
-**Cross-stack inversion:** the 9B fits, so NVIDIA wins; the 27B
-saturates VRAM, so Apple wins. The hardware-class match (24 GB unified
-≈ 24 GB VRAM nominally) is not enough on its own — KV-cache budget on
-long context tips the balance back toward unified memory.
+### The cold-start tax pattern
+
+On the 4090 the first call of each corpus showed a large outlier:
+
+| Corpus | Cold-start latency | Warm avg | Tax (cold − warm) |
+|---|---|---|---|
+| small_30 | 104.1 s | 52.2 s | +52 s |
+| medium_80 | 150.0 s | 63.8 s | +86 s |
+| large_150 | 278.7 s | 65.9 s | **+213 s** |
+
+Tax scales roughly linearly with prompt token volume. During the
+cold-start phase of large_150 (observed live):
+- VRAM 23.3 / 24 GB
+- System-RAM (Ollama) ~11 GB
+- GPU power swings 90 W (waiting) ↔ 220 W (computing)
+- GPU utilization swings 25 % ↔ 86 %
+- Ollama-server CPU 37 %
+
+After warm-up (call 2 onward), VRAM, GPU util, and CPU stabilize and
+the per-call latency drops back to the warm range. Interpretation:
+the first call pulls the 17 GB model + initial 149 k-token KV-cache
+through PCIe; subsequent calls re-use the resident model and benefit
+from KV-cache prefix-hits inside Ollama. Apple unified memory does
+not pay this tax because the model is always resident in the same
+128 GB pool the working set lives in.
+
+**Cross-stack inversion at scale:** the small_30 picture (Donnager
+1.5× slower at warm avg) reverses at large_150 (Donnager 1.4× faster
+at warm avg). Reason: small_30's per-call work is small enough that
+Ollama-runner overhead dominates; large_150's per-call work is big
+enough that the 4090's raw compute pulls ahead — but only after
+the cold-start tax is paid. **For batch workloads where the model
+stays warm, the 4090 is the better long-context recall machine; for
+one-off ad-hoc calls on a cold service, the Apple cold-start
+advantage matters more.**
 
 ### Cross-stack: qwen3.5-4b on 8 GB-VRAM edge
 
