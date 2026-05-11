@@ -46,11 +46,16 @@ local + 3 cloud model configurations on three corpus sizes:
    large_150 sonnet drops slightly to 91.7 % (1 connection-drop at
    the 16th call) and opus could not be measured at the 149 k-token
    scale within budget. **Methodology note:** an initial opus medium_80
-   run scored only 69 % — that turned out to be HTTP 400 budget-
-   exhaustion errors silently scored as empty responses, not a model
-   weakness. With Anthropic 1 h-TTL prompt caching enabled (the cached
-   re-run, sonnet/opus 6-7 s per query on small/medium), opus is 100 %.
-   Cloud is faster, not quieter.
+   run scored only 69 %. The run summary explicitly reported "11 scored,
+   5 errored" and the run log carried the HTTP 400 "credit balance too
+   low" messages on those 5 calls — the failure mode was prominent, not
+   silent. The write-up step that built the model-behavior story
+   compared only the passed-counts (Opus 11/16 vs Sonnet 16/16) and
+   read "Opus is conservative" out of that gap, without integrating
+   the errored count. With Anthropic 1 h-TTL prompt caching enabled
+   (the cached re-run, sonnet/opus 6-7 s per query on small/medium),
+   opus reaches 100 %. The lesson is about evaluation discipline, not
+   model behavior or API silence.
 
 5. **Cluster-trap discrimination is intact for 10 of 11 local
    configurations** — even the Q4-quantized 4 B model correctly picks
@@ -481,12 +486,17 @@ caching. **Large_150 not measured** — Anthropic budget exhausted before
 the run completed; estimated $5-7 budget gap to a successful cached run.
 
 **Methodology correction:** an earlier (no-cache) opus medium_80 run
-scored 69 % with "5 empty bonus slots" — that was initially read as
-"Opus is conservative, prefers silence to wrong answers." Closer
-inspection of the run log showed those 5 calls were **HTTP 400 'credit
-balance too low'** errors silently scored as empty responses. The
-cached re-run with sufficient budget produced a perfect 16/16. The
-opus-is-quiet narrative is a measurement artifact, not a model trait.
+scored 69 %. The run summary reported "11 scored, 5 errored" and the
+run log explicitly carried 5 error lines — 1 × HTTP 400 "credit balance
+too low" plus subsequent connection-drops and a 502 that the same
+budget condition cascaded into. The failure mode was prominent in
+both summary and log; the imprecision lay in the next step, when
+"Opus 11/16 pass vs Sonnet 16/16 pass" was read as "Opus is
+conservative, prefers silence to wrong answers" without integrating
+the errored count and the error-detail lines. The cached re-run with
+sufficient budget produced a perfect 16/16 — confirming that the
+opus-is-quiet narrative was an evaluation artifact, not a model
+trait or a hidden API failure.
 
 ### Use-case suitability for IT ticket support
 
@@ -520,11 +530,14 @@ opus-is-quiet narrative is a measurement artifact, not a model trait.
 
 - **Most expensive cloud option in this benchmark** — 5× sonnet,
   ~25× gpt-5.1 per call without cache, ~5× gpt-5.1 with cache
-- **Silent API failures look like model output:** the budget-exhaustion
-  episode shows how 5 errored calls scored as "5 empty responses" can
-  masquerade as a model-confidence story. Recommendation: add a hard
-  check on `error` field in the bench result loop before drawing
-  conclusions about model behavior
+- **Errored-count discipline at write-up time:** the budget-exhaustion
+  episode shows how 5 errored calls — even when reported prominently
+  in the bench summary and run log — can be quietly dropped from a
+  model-behavior write-up if only the passed-counts are compared.
+  Recommendation: treat the errored count in bench summaries as a
+  first-class data point alongside passed counts, and inspect each
+  errored call's `error` field before drawing conclusions about model
+  behavior
 - **Large_150 unverified** — methodology has a gap here
 
 ### Cost profile
